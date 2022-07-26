@@ -39,6 +39,8 @@ class BreakingChanges {
         // need to define the `FunctionSignature` of the function which specifies the name, return type, and any
         // required, optional, and variadic arguments. The implementation will need to override `callWith*` depending
         // on the permitted arguments (in this example, overriding `callWithRequired` and `callWithOptional`).
+        // Note: in v0.6.0, the first argument to the `callWith*` function was changed from `Environment` to
+        // `EvaluationSession`
         class SomeExprFunction(): ExprFunction {
             override val signature = FunctionSignature(
                 name = "some_expr_function",
