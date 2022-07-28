@@ -4,6 +4,8 @@
 package examples
 
 import com.amazon.ion.system.IonSystemBuilder
+import com.amazon.ionelement.api.IntElement
+import com.amazon.ionelement.api.ionInt
 import org.partiql.lang.ast.CaseSensitivity
 import org.partiql.lang.ast.FromSourceExpr
 import org.partiql.lang.ast.FromSourceUnpivot
@@ -14,9 +16,11 @@ import org.partiql.lang.ast.SeqType
 import org.partiql.lang.ast.SymbolicName
 import org.partiql.lang.ast.VariableReference
 import org.partiql.lang.ast.metaContainerOf
+import org.partiql.lang.domains.PartiqlAst
 import org.partiql.lang.syntax.ParserException
 import org.partiql.lang.syntax.SqlParser
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class BreakingChanges {
@@ -99,5 +103,30 @@ class BreakingChanges {
             ),
             metas = metaContainerOf()
         )
+    }
+
+    @Test
+    fun `deprecated api - rewriting ASTs`() {
+        val ion = IonSystemBuilder.standard().build()
+        // v0.2.* onwards recommend using the PartiqlAst over any other AST versions
+        val partiqlAst = SqlParser(ion).parseAstStatement("SELECT * FROM <<{'a': 1, 'b': {'c': 23}}>>")
+
+        // below shows a way to create the same recursive rewriting function on PartiqlAst statements using the
+        // VisitorTransform class
+        class RewriteIntsTo42: PartiqlAst.VisitorTransform() {
+            override fun transformExprLit(node: PartiqlAst.Expr.Lit): PartiqlAst.Expr {
+                val newValue = when (node.value) {
+                    is IntElement -> ionInt(42)
+                    else -> node.value
+                }
+                val newNode = PartiqlAst.build {
+                    lit(newValue)
+                }
+                return super.transformExprLit(newNode)
+            }
+        }
+        val rewrittenStatement = RewriteIntsTo42().transformStatement(partiqlAst)
+        val expectedPartiqlAst = SqlParser(ion).parseAstStatement("SELECT * FROM <<{'a': 42, 'b': {'c': 42}}>>")
+        assertEquals(expectedPartiqlAst, rewrittenStatement)
     }
 }
