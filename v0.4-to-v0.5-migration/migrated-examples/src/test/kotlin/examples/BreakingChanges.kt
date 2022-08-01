@@ -12,6 +12,7 @@ import org.partiql.lang.eval.ExprValue
 import org.partiql.lang.syntax.SqlParser
 import org.partiql.lang.types.FunctionSignature
 import org.partiql.lang.types.StaticType
+import org.partiql.lang.types.VarargFormalParameter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -57,6 +58,23 @@ class BreakingChanges {
                 TODO("Implementation details with optional argument")
             }
         }
+    }
+
+    @Test
+    fun `api change - UntypedFunctionSignature removed`() {
+        // In v0.5.0, due to the refactor of `FunctionSignature`, `UntypedFunctionSignature` was removed. The equivalent
+        // can be created using the `FunctionSignature` constructor that includes the `variadicParameter` argument
+        val funName = "untyped_fun"
+        // initialization of an untyped `FunctionSignature` with the refactored APIs
+        val signature = FunctionSignature(
+            name = funName,
+            requiredParameters = emptyList(),
+            variadicParameter = VarargFormalParameter(StaticType.ANY, minCount = 0),
+            returnType = StaticType.ANY
+        )
+        assertEquals(funName, signature.name)
+        assertEquals(VarargFormalParameter(StaticType.ANY, minCount = 0), signature.variadicParameter)
+        assertEquals(StaticType.ANY, signature.returnType)
     }
 
     @Test
