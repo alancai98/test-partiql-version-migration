@@ -38,6 +38,10 @@ class BreakingChanges {
 
         // Query successfully evaluates. Here we compare the result to its string representation.
         assertEquals("<<{'a': 1, 'a': 2}>>", result.toString())
+
+        // Query with an ON clause successfully parses and can be evaluated
+        val resultWithOn = pipeline.compile("SELECT * FROM <<{'a': 1}>> INNER JOIN <<{'a': 2}>> ON true").eval(evaluationSession)
+        assertEquals(result.toString(), resultWithOn.toString())
     }
 
     @Test

@@ -6,6 +6,7 @@ package examples
 import com.amazon.ion.system.IonSystemBuilder
 import com.amazon.ionelement.api.IntElement
 import com.amazon.ionelement.api.ionInt
+import org.partiql.lang.CompilerPipeline
 import org.partiql.lang.ast.CaseSensitivity
 import org.partiql.lang.ast.FromSourceExpr
 import org.partiql.lang.ast.FromSourceUnpivot
@@ -17,6 +18,7 @@ import org.partiql.lang.ast.SymbolicName
 import org.partiql.lang.ast.VariableReference
 import org.partiql.lang.ast.metaContainerOf
 import org.partiql.lang.domains.PartiqlAst
+import org.partiql.lang.eval.EvaluationSession
 import org.partiql.lang.syntax.ParserException
 import org.partiql.lang.syntax.SqlParser
 import kotlin.test.Test
@@ -29,6 +31,8 @@ class BreakingChanges {
         // Initialization of components related to parsing a query end-to-end
         val ion = IonSystemBuilder.standard().build()
         val parser = SqlParser(ion)
+        val pipeline = CompilerPipeline.standard(ion)
+        val evaluationSession = EvaluationSession.standard()
 
         // Query with a JOIN without an ON clause. Starting in v0.2.0, the ON condition is REQUIRED except for cross
         // joins. When not provided, a parser error is thrown.
@@ -36,6 +40,10 @@ class BreakingChanges {
         assertFailsWith<ParserException> {
             parser.parseExprNode(query)
         }
+
+        // Query with an ON clause still successfully parses and can be evaluated in v0.2.* onwards
+        val resultWithOn = pipeline.compile("SELECT * FROM <<{'a': 1}>> INNER JOIN <<{'a': 2}>> ON true").eval(evaluationSession)
+        assertEquals("<<{'a': 1, 'a': 2}>>", resultWithOn.toString())
     }
 
     @Test
